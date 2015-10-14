@@ -17,58 +17,88 @@ module TimeSplitter
 
         # Writers
 
+        define_method("#{attr}=") do |value|
+          self.send("#{attr}_date=", nil)
+          self.send("#{attr}_hour=", nil)
+          self.send("#{attr}_min=", nil)
+          self.send("#{attr}_time=", nil)
+          super(value)
+        end
+
         define_method("#{attr}_date=") do |date|
+          instance_variable_set("@#{attr}_date", date)
           return unless date.present?
           unless date.is_a?(Date) || date.is_a?(Time)
-            if options[:date_format]
-              date = Date.strptime(date.to_s, options[:date_format])
-            else
-              date = Date.parse(date.to_s)
+            begin
+              if options[:date_format]
+                date = Date.strptime(date.to_s, options[:date_format])
+              else
+                date = Date.parse(date.to_s)
+              end
+            rescue ArgumentError
+              date = nil
             end
           end
-          self.send("#{attr}=", self.send("#{attr}_or_new").change(year: date.year, month: date.month, day: date.day))
+          self.send("#{attr}=", self.send("#{attr}_or_new").change(year: date.year, month: date.month, day: date.day)) if date
         end
 
         define_method("#{attr}_hour=") do |hour|
+          instance_variable_set("@#{attr}_hour", hour)
           return unless hour.present?
           self.send("#{attr}=", self.send("#{attr}_or_new").change(hour: hour, min: self.send("#{attr}_or_new").min))
         end
 
         define_method("#{attr}_min=") do |min|
+          instance_variable_set("@#{attr}_min", min)
           return unless min.present?
           self.send("#{attr}=", self.send("#{attr}_or_new").change(min: min))
         end
 
         define_method("#{attr}_time=") do |time|
+          instance_variable_set("@#{attr}_time", time)
           return unless time.present?
 
           unless time.is_a?(Date) || time.is_a?(Time)
-            if options[:time_format]
-              time = Time.strptime(time, options[:time_format])
-            else
-              time = Time.parse(time)
+            begin
+              if options[:time_format]
+                time = Time.strptime(time, options[:time_format])
+              else
+                time = Time.parse(time)
+              end
+            rescue ArgumentError
+              time = nil
             end
           end
-          self.send("#{attr}=", self.send("#{attr}_or_new").change(hour: time.hour, min: time.min))
+          self.send("#{attr}=", self.send("#{attr}_or_new").change(hour: time.hour, min: time.min)) if time
         end
 
         # Readers
         define_method("#{attr}_date") do
-          date = self.send(attr).try :to_date
-          date && options[:date_format] ? date.strftime(options[:date_format]) : date
+          if date = instance_variable_get("@#{attr}_date")
+            date
+          else
+            date = self.send(attr).try :to_date
+            instance_variable_set("@#{attr}_date", date && options[:date_format] ? date.strftime(options[:date_format]) : date)
+          end
         end
 
         define_method("#{attr}_hour") do
-          self.send(attr).try :hour
+          instance_variable_get("@#{attr}_hour") ||
+            instance_variable_set("@#{attr}_hour", self.send(attr).try(:hour))
         end
 
         define_method("#{attr}_min") do
-          self.send(attr).try :min
+          instance_variable_get("@#{attr}_min") ||
+            instance_variable_set("@#{attr}_min", self.send(attr).try(:min))
         end
 
         define_method("#{attr}_time") do
-          time = self.send(attr)
-          time && options[:time_format] ? time.strftime(options[:time_format]) : time
+          if time = instance_variable_get("@#{attr}_time")
+            time
+          else
+            time = self.send(attr)
+            instance_variable_set("@#{attr}_time", time && options[:time_format] ? time.strftime(options[:time_format]) : time)
+          end
         end
       end
     end
