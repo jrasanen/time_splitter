@@ -45,13 +45,13 @@ module TimeSplitter
         define_method("#{attr}_hour=") do |hour|
           instance_variable_set("@#{attr}_hour", hour)
           return unless hour.present?
-          self.send("#{attr}=", self.send("#{attr}_or_new").change(hour: hour, min: self.send("#{attr}_or_new").min))
+          self.send("#{attr}=", self.send("#{attr}_or_new").change(hour: hour.to_i, min: self.send("#{attr}_or_new").min))
         end
 
         define_method("#{attr}_min=") do |min|
           instance_variable_set("@#{attr}_min", min)
           return unless min.present?
-          self.send("#{attr}=", self.send("#{attr}_or_new").change(min: min))
+          self.send("#{attr}=", self.send("#{attr}_or_new").change(min: min.to_i))
         end
 
         define_method("#{attr}_time=") do |time|
